@@ -9,6 +9,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | Version | Tag | Upstream commit |
 |---------|-----|-----------------|
 | v0.9.1 | [`v0.9.1`](https://github.com/chainguard-actions/yoshi389111-github-profile-3d-contrib/tree/v0.9.1) | [`208d821`](https://github.com/yoshi389111/github-profile-3d-contrib/commit/208d8215bd117497a02c94f559f94474ba23819c) |
+| v0.9.2 | [`v0.9.2`](https://github.com/chainguard-actions/yoshi389111-github-profile-3d-contrib/tree/v0.9.2) | [`5b71873`](https://github.com/yoshi389111/github-profile-3d-contrib/commit/5b718734e8da645411919f0ae9ab9e7f9377158f) |
 
 ## Privacy
 
