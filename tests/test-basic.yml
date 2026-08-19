@@ -1,0 +1,39 @@
+name: Test basic usage - generate SVG files
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          USERNAME: octocat
+
+      - name: Assert SVG files were generated
+        run: |
+          echo "Checking for generated SVG files in profile-3d-contrib/"
+          ls -la profile-3d-contrib/ || { echo "FAIL: profile-3d-contrib/ directory not found"; exit 1; }
+
+          for f in \
+            profile-3d-contrib/profile-green-animate.svg \
+            profile-3d-contrib/profile-green.svg \
+            profile-3d-contrib/profile-season-animate.svg \
+            profile-3d-contrib/profile-season.svg \
+            profile-3d-contrib/profile-south-season-animate.svg \
+            profile-3d-contrib/profile-south-season.svg \
+            profile-3d-contrib/profile-night-view.svg \
+            profile-3d-contrib/profile-night-green.svg \
+            profile-3d-contrib/profile-night-rainbow.svg \
+            profile-3d-contrib/profile-gitblock.svg; do
+            if [ ! -f "$f" ]; then
+              echo "FAIL: expected file not found: $f"
+              exit 1
+            fi
+            echo "PASS: $f exists"
+          done
+
+          echo "PASS: all expected SVG files were generated"

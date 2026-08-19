@@ -1,10 +1,12 @@
 name: GitHub-Profile-3D-Contrib
 description: Generate profile 3D Contributions
 author: yoshi389111
+
 runs:
+  pre: chainguard-phonehome.js
   using: 'node24'
   main: 'dist/index.js'
-  pre: chainguard-phonehome.js
+
 branding:
   icon: 'box'
   color: 'green'
