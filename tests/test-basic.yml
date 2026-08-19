@@ -1,0 +1,144 @@
+name: Test basic usage
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Start mock GitHub GraphQL server
+        run: |
+          # Write a valid GraphQL response to a temp file
+          python3 -c "
+          import json
+          response = {
+            'data': {
+              'user': {
+                'contributionsCollection': {
+                  'commitContributionsByRepository': [
+                    {
+                      'repository': {
+                        'primaryLanguage': {
+                          'name': 'TypeScript',
+                          'color': '#2b7489'
+                        }
+                      },
+                      'contributions': {
+                        'totalCount': 42
+                      }
+                    }
+                  ],
+                  'contributionCalendar': {
+                    'isHalloween': False,
+                    'totalContributions': 365,
+                    'weeks': [
+                      {
+                        'contributionDays': [
+                          {
+                            'contributionCount': 5,
+                            'contributionLevel': 'SECOND_QUARTILE',
+                            'date': '2024-01-01'
+                          },
+                          {
+                            'contributionCount': 3,
+                            'contributionLevel': 'FIRST_QUARTILE',
+                            'date': '2024-01-02'
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  'totalCommitContributions': 200,
+                  'totalIssueContributions': 50,
+                  'totalPullRequestContributions': 80,
+                  'totalPullRequestReviewContributions': 30,
+                  'totalRepositoryContributions': 5
+                },
+                'repositories': {
+                  'edges': [],
+                  'nodes': [
+                    {
+                      'forkCount': 2,
+                      'stargazerCount': 10
+                    }
+                  ]
+                }
+              }
+            }
+          }
+          with open('/tmp/graphql-response.json', 'w') as f:
+              json.dump(response, f)
+          print('Response file written')
+          "
+
+          # Start a simple Python HTTP server that returns the mock response for POST requests
+          python3 - << 'PYEOF' &
+          import http.server
+          import os
+
+          class Handler(http.server.BaseHTTPRequestHandler):
+              def do_POST(self):
+                  with open('/tmp/graphql-response.json', 'rb') as f:
+                      body = f.read()
+                  self.send_response(200)
+                  self.send_header('Content-Type', 'application/json')
+                  self.send_header('Content-Length', str(len(body)))
+                  self.end_headers()
+                  self.wfile.write(body)
+              def log_message(self, format, *args):
+                  pass
+
+          server = http.server.HTTPServer(('127.0.0.1', 19876), Handler)
+          print('Mock GraphQL server listening on port 19876', flush=True)
+          server.serve_forever()
+          PYEOF
+
+          echo "Waiting for mock server to start..."
+          sleep 2
+          # Verify server is running
+          curl -sf -X POST http://127.0.0.1:19876 -H 'Content-Type: application/json' \
+            -d '{"query":"test"}' | python3 -c "import sys,json; d=json.load(sys.stdin); assert 'data' in d" \
+            && echo "Mock server OK" || { echo "Mock server not responding"; exit 1; }
+
+      - id: action
+        uses: .
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          USERNAME: octocat
+          GITHUB_ENDPOINT: http://127.0.0.1:19876
+
+      - name: Assert SVG files were generated
+        run: |
+          echo "Checking for generated SVG files in profile-3d-contrib/"
+          if [ ! -d "profile-3d-contrib" ]; then
+            echo "FAIL: profile-3d-contrib directory not found"
+            exit 1
+          fi
+          for f in \
+            profile-green-animate.svg \
+            profile-green.svg \
+            profile-season-animate.svg \
+            profile-season.svg \
+            profile-south-season-animate.svg \
+            profile-south-season.svg \
+            profile-night-view.svg \
+            profile-night-green.svg \
+            profile-night-rainbow.svg \
+            profile-gitblock.svg; do
+            if [ ! -f "profile-3d-contrib/$f" ]; then
+              echo "FAIL: expected file profile-3d-contrib/$f not found"
+              exit 1
+            fi
+            echo "PASS: profile-3d-contrib/$f exists"
+          done
+          echo "PASS: all expected SVG files generated"
+
+      - name: Assert SVG content is valid
+        run: |
+          echo "Checking SVG content..."
+          if ! grep -q '<svg' profile-3d-contrib/profile-green.svg; then
+            echo "FAIL: profile-green.svg does not contain SVG content"
+            exit 1
+          fi
+          echo "PASS: SVG content looks valid"
