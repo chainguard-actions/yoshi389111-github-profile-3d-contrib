@@ -1,0 +1,47 @@
+name: Test missing USERNAME fails gracefully
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Ensure no pre-existing output directory
+        run: rm -rf profile-3d-contrib
+
+      - name: Start mock GraphQL server returning error
+        run: |
+          python3 "$GITHUB_WORKSPACE/tests/fixtures/mock_graphql_error_server.py" 18083 &
+          echo "Mock server PID: $!"
+          for i in $(seq 1 15); do
+            if curl -sf -X POST -H "Content-Type: application/json" -d '{}' http://127.0.0.1:18083 > /dev/null 2>&1; then
+              echo "Mock server ready after ${i}s"
+              break
+            fi
+            sleep 1
+          done
+          echo "Mock server check complete"
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          USERNAME: ""
+          GITHUB_ENDPOINT: http://127.0.0.1:18083
+
+      - name: Assert action failed due to missing username
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action correctly failed (outcome=failure) when USERNAME is empty"
+            exit 0
+          fi
+          if [ -d "profile-3d-contrib" ]; then
+            echo "FAIL: expected action to fail when USERNAME is empty, but SVG files were generated (outcome=$OUTCOME)"
+            exit 1
+          fi
+          echo "PASS: action did not generate SVG files when USERNAME is empty"

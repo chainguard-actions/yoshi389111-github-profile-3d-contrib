@@ -1,0 +1,52 @@
+name: Test with YEAR option - generate 3D contribution SVGs for a past year
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Start mock GraphQL server for year test
+        run: |
+          MOCK_RESPONSE_FILE="$GITHUB_WORKSPACE/tests/fixtures/graphql_response_year.json" \
+            python3 "$GITHUB_WORKSPACE/tests/fixtures/mock_graphql_server.py" 18082 &
+          echo "Mock server PID: $!"
+          for i in $(seq 1 15); do
+            if curl -sf -X POST -H "Content-Type: application/json" -d '{}' http://127.0.0.1:18082 > /dev/null 2>&1; then
+              echo "Mock server ready after ${i}s"
+              break
+            fi
+            sleep 1
+          done
+          echo "Mock server check complete"
+
+      - id: action
+        uses: .
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          USERNAME: testuser
+          YEAR: "2023"
+          GITHUB_ENDPOINT: http://127.0.0.1:18082
+
+      - name: Assert SVG files were generated for the specified year
+        run: |
+          echo "Checking for generated SVG files in profile-3d-contrib/"
+          ls -la profile-3d-contrib/ || { echo "FAIL: profile-3d-contrib directory not found"; exit 1; }
+
+          for f in \
+            profile-3d-contrib/profile-green-animate.svg \
+            profile-3d-contrib/profile-green.svg \
+            profile-3d-contrib/profile-gitblock.svg; do
+            if [ ! -f "$f" ]; then
+              echo "FAIL: expected file not found: $f"
+              exit 1
+            fi
+            if ! grep -q "<svg" "$f"; then
+              echo "FAIL: file does not appear to be valid SVG: $f"
+              exit 1
+            fi
+            echo "PASS: found valid SVG at $f"
+          done
+
+          echo "PASS: SVG files generated successfully for year 2023"
