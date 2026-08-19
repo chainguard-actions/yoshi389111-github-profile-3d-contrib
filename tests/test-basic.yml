@@ -1,0 +1,111 @@
+name: Test basic usage - generate SVG files
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Start mock GitHub GraphQL API server
+        run: |
+          cat > /tmp/mock-graphql.js << 'JSEOF'
+          const http = require('http');
+          const mockResponse = JSON.stringify({
+            data: {
+              user: {
+                contributionsCollection: {
+                  contributionCalendar: {
+                    isHalloween: false,
+                    totalContributions: 42,
+                    weeks: [
+                      {
+                        contributionDays: [
+                          { contributionCount: 3, contributionLevel: "SECOND_QUARTILE", date: "2024-01-01" },
+                          { contributionCount: 0, contributionLevel: "NONE", date: "2024-01-02" },
+                          { contributionCount: 5, contributionLevel: "THIRD_QUARTILE", date: "2024-01-03" },
+                          { contributionCount: 1, contributionLevel: "FIRST_QUARTILE", date: "2024-01-04" },
+                          { contributionCount: 8, contributionLevel: "FOURTH_QUARTILE", date: "2024-01-05" },
+                          { contributionCount: 2, contributionLevel: "FIRST_QUARTILE", date: "2024-01-06" },
+                          { contributionCount: 0, contributionLevel: "NONE", date: "2024-01-07" }
+                        ]
+                      }
+                    ]
+                  },
+                  commitContributionsByRepository: [
+                    {
+                      repository: {
+                        primaryLanguage: { name: "TypeScript", color: "#2b7489" }
+                      },
+                      contributions: { totalCount: 20 }
+                    }
+                  ],
+                  totalCommitContributions: 20,
+                  totalIssueContributions: 5,
+                  totalPullRequestContributions: 10,
+                  totalPullRequestReviewContributions: 3,
+                  totalRepositoryContributions: 4
+                },
+                repositories: {
+                  edges: [],
+                  nodes: [
+                    { forkCount: 2, stargazerCount: 10 },
+                    { forkCount: 0, stargazerCount: 5 }
+                  ]
+                }
+              }
+            }
+          });
+          const server = http.createServer((req, res) => {
+            let body = '';
+            req.on('data', chunk => { body += chunk; });
+            req.on('end', () => {
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(mockResponse);
+            });
+          });
+          server.listen(28080, '127.0.0.1', () => {
+            process.stdout.write('Mock GraphQL server listening on 127.0.0.1:28080\n');
+          });
+          JSEOF
+          node /tmp/mock-graphql.js &
+          # Wait for server to be ready
+          for i in $(seq 1 10); do
+            if curl -s -X POST http://127.0.0.1:28080/graphql \
+              -H 'Content-Type: application/json' \
+              -d '{"query":"test"}' | grep -q '"data"'; then
+              echo "Mock server is ready"
+              break
+            fi
+            echo "Waiting for mock server... attempt $i"
+            sleep 1
+          done
+      - id: action
+        uses: .
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          USERNAME: testmockuser
+          GITHUB_ENDPOINT: http://127.0.0.1:28080/graphql
+      - name: Assert SVG files were generated
+        run: |
+          echo "Checking for generated SVG files in profile-3d-contrib/"
+          ls -la profile-3d-contrib/ || { echo "FAIL: profile-3d-contrib directory not found"; exit 1; }
+
+          for f in \
+            profile-3d-contrib/profile-green-animate.svg \
+            profile-3d-contrib/profile-green.svg \
+            profile-3d-contrib/profile-season-animate.svg \
+            profile-3d-contrib/profile-season.svg \
+            profile-3d-contrib/profile-south-season-animate.svg \
+            profile-3d-contrib/profile-south-season.svg \
+            profile-3d-contrib/profile-night-view.svg \
+            profile-3d-contrib/profile-night-green.svg \
+            profile-3d-contrib/profile-night-rainbow.svg \
+            profile-3d-contrib/profile-gitblock.svg; do
+            if [ ! -f "$f" ]; then
+              echo "FAIL: expected file not found: $f"
+              exit 1
+            fi
+            echo "PASS: $f exists"
+          done
+
+          echo "PASS: all expected SVG files were generated"
