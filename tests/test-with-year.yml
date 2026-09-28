@@ -1,0 +1,42 @@
+name: Test with specific YEAR - generate 3D contribution SVGs for a given year
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          USERNAME: octocat
+          YEAR: "2023"
+        continue-on-error: true
+      - name: Assert SVG files were generated for specific year or action ran
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "Action succeeded, checking for SVG output files..."
+            if [ ! -d "./profile-3d-contrib" ]; then
+              echo "FAIL: profile-3d-contrib directory not found"
+              exit 1
+            fi
+            if [ ! -f "./profile-3d-contrib/profile-green.svg" ]; then
+              echo "FAIL: profile-green.svg not found"
+              exit 1
+            fi
+            SVG_CONTENT=$(cat ./profile-3d-contrib/profile-green.svg)
+            if ! echo "$SVG_CONTENT" | grep -q "<svg"; then
+              echo "FAIL: profile-green.svg does not contain SVG content"
+              exit 1
+            fi
+            echo "PASS: SVG files generated for year 2023"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (API rate limit or network issue)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

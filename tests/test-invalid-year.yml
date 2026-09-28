@@ -1,0 +1,29 @@
+name: Test invalid YEAR - action should fail gracefully
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          USERNAME: octocat
+          YEAR: "not-a-number"
+        continue-on-error: true
+      - name: Assert action fails when YEAR is invalid
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action correctly failed when YEAR is not a valid number"
+          elif [ "$OUTCOME" = "success" ]; then
+            echo "FAIL: action should have failed with invalid YEAR"
+            exit 1
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
