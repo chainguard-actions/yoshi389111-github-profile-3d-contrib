@@ -13,6 +13,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | 0.9.0 | [`0.9.0`](https://github.com/chainguard-actions/yoshi389111-github-profile-3d-contrib/tree/0.9.0) | [`be61993`](https://github.com/yoshi389111/github-profile-3d-contrib/commit/be61993e25e0d8df2afaa52ed8a0451cae3b34fd) |
 | v0.9.1 | [`v0.9.1`](https://github.com/chainguard-actions/yoshi389111-github-profile-3d-contrib/tree/v0.9.1) | [`208d821`](https://github.com/yoshi389111/github-profile-3d-contrib/commit/208d8215bd117497a02c94f559f94474ba23819c) |
 | v0.9.2 | [`v0.9.2`](https://github.com/chainguard-actions/yoshi389111-github-profile-3d-contrib/tree/v0.9.2) | [`5b71873`](https://github.com/yoshi389111/github-profile-3d-contrib/commit/5b718734e8da645411919f0ae9ab9e7f9377158f) |
+| v0.9.3 | [`v0.9.3`](https://github.com/chainguard-actions/yoshi389111-github-profile-3d-contrib/tree/v0.9.3) | [`7d95e7d`](https://github.com/yoshi389111/github-profile-3d-contrib/commit/7d95e7d4cdc028dd1e1cbd957d65f35efb12ae39) |
 
 ## Privacy
 
