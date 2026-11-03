@@ -4,8 +4,13 @@
   "version": "v0.9.1",
   "commit_sha": "208d8215bd117497a02c94f559f94474ba23819c",
   "url": "https://github.com/yoshi389111/github-profile-3d-contrib",
-  "policy_sha": "d636be7e43ef829af6e853da6b3c7566db9f72fe",
+  "policy_sha": "374911c4be584df24e6da57af2d990570ef0f859",
   "test_policy_sha": "843adf9e4b8f85d0c08b27b9d0b09dd094b54702",
   "test_agent_version": "2",
-  "harden_agent_version": "2"
+  "harden_agent_version": "2",
+  "dist_artifact": {
+    "gcs_uri": "gs://patch-actions-node-artifacts/dist-artifacts/yoshi389111/github-profile-3d-contrib/v0.9.1/sha256-c8e025e2d8175afc79a83a011cf375dbf14879e484a9517466990de8ba19ffee.tar.gz",
+    "sha256": "c8e025e2d8175afc79a83a011cf375dbf14879e484a9517466990de8ba19ffee",
+    "size_bytes": 1465063
+  }
 }
